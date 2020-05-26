@@ -1,0 +1,17 @@
+<template>
+  <div id="app">
+    <TheNavbar/>
+    <div class="container">
+    <router-view/>
+    </div>
+  </div>
+</template>
+
+<script>
+import TheNavbar from '&/TheNavbar'
+export default {
+  components: {
+    TheNavbar
+  }
+}
+</script>

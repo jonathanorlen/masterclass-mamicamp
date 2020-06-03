@@ -13,48 +13,36 @@
 
     <!-- use .navbar-open to open nav -->
     <nav class="navbar">
-        <ul>
+        <ul v-if="user">
             <li class="navbar-user">
-                <a href="#">
+                <a @click.prevent="userDropDown = !userDropDown">
                     <img class="avatar-small" :src="user.avatar" alt="">
                     <span>
                         {{user.name}}
                         <img class="icon-profile" src="../assets/image/arrow-profile.svg" alt="">
                     </span>
                 </a>
-
                 <!-- dropdown menu -->
                 <!-- add class "active-drop" to show the dropdown -->
-                <div id="user-dropdown">
+                <div id="user-dropdown" :class="{'active-drop': userDropDown}">
                     <div class="triangle-drop"></div>
                     <ul class="dropdown-menu">
-                        <li class="dropdown-menu-item"><a href="profile.html">View profile</a></li>
-                        <li class="dropdown-menu-item"><a href="#">Log out</a></li>
+                        <li class="dropdown-menu-item">
+                            <router-link :to="{name: 'Profile'}">
+                                View Profile
+                            </router-link>
+                        </li>
+                        <li class="dropdown-menu-item"><a @click.prevent="$store.dispatch('signOut')">Logout</a></li>
                     </ul>
                 </div>
             </li>
         </ul>
-
-        
-        <ul>
+        <ul v-else>
             <li class="navbar-item">
-                <a href="index.html">Home</a>
+                <router-link :to="{name: 'SignIn'}">Sign In</router-link>
             </li>
             <li class="navbar-item">
-                <a href="category.html">Category</a>
-            </li>
-            <li class="navbar-item">
-                <a href="forum.html">Forum</a>
-            </li>
-            <li class="navbar-item">
-                <a href="thread.html">Thread</a>
-            </li>
-            <!-- Show these option only on mobile-->
-            <li class="navbar-item mobile-only">
-                <a href="profile.html">My Profile</a>
-            </li>
-            <li class="navbar-item mobile-only">
-                <a href="#">Logout</a>
+                <router-link :to="{name: 'Register'}">Register</router-link>
             </li>
         </ul>
     </nav>
@@ -64,6 +52,11 @@
 <script>
 import {mapGetters} from 'vuex'
 export default {
+  data () {
+    return {
+      userDropDown: true
+    }
+  },
   computed: {
     ...mapGetters({
       user: 'authUser'

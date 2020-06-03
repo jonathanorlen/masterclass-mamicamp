@@ -1,4 +1,5 @@
 import firebase from 'firebase'
+import {removeEmptyProperties} from '@/utils'
 
 export default {
   createPost ({ commit, state }, post) {
@@ -17,6 +18,23 @@ export default {
       commit('appendContributorToThread', { parentId: post.threadId, childId: post.userId })
       commit('appendPostToUser', { parentId: post.userId, childId: postId })
       return Promise.resolve(state.posts[postId])
+    })
+  },
+  initAuthentication ({dispatch, commit, state}) {
+    return new Promise((resolve, reject) => {
+      if (state.unsubscribeAutoObserver) {
+        state.unsubscribeAutoObserver()
+      }
+      const unsubscribe = firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+          dispatch('fetchAuthUser')
+          .then(dbUser => resolve(dbUser))
+        } else {
+          resolve(null)
+        }
+      })
+
+      commit('setUnsubscribeAuthObserver', unsubscribe)
     })
   },
   createThread ({ state, commit, dispatch }, {text, title, forumId}) {
@@ -59,6 +77,48 @@ export default {
       })
     })
   },
+  createUser ({state, commit}, {id, email, name, username, avatar = null, password}) {
+    return new Promise((resolve, reject) => {
+      const registerdAt = Math.floor(Date.now() / 1000)
+      const usernameLower = username.toLowerCase()
+      email = email.toLowerCase()
+      const user = {avatar, email, name, username, usernameLower, registerdAt, password}
+      firebase.database().ref('users').child(id).set(user)
+      .then(() => {
+        commit('setItem', {resource: 'users', id: id, item: user})
+        resolve(state.users[id])
+      })
+    })
+  },
+  registerUserWithEmailAndPassword ({context, dispatch}, {email, name, password, username, avatar = null}) {
+    return firebase.auth().createUserWithEmailAndPassword(email, password)
+    .then(user => {
+      return dispatch('createUser', {id: user.user.uid, email, name, username, avatar, password})
+    })
+    .then(() => dispatch('fetchAuthUser'))
+  },
+  signInWithEmailAndPassword (context, {email, password}) {
+    return firebase.auth().signInWithEmailAndPassword(email, password)
+  },
+  signInWithGoogle ({dispatch}) {
+    const provider = new firebase.auth.GoogleAuthProvider()
+    return firebase.auth().signInWithPopup(provider)
+    .then(data => {
+      const user = data.user
+      firebase.database().ref('users').child(user.uid).once('value', snapshot => {
+        if (!snapshot.exists()) {
+          return dispatch('createUser', {id: user.uid, name: user.displayName, email: user.email, username: user.email, avatar: user.photoURL})
+          .then(() => dispatch('fetchAuthUser'))
+        }
+      })
+    })
+  },
+  signOut ({commit}) {
+    return firebase.auth().signOut()
+    .then(() => {
+      commit('sethAuthId', null)
+    })
+  },
   updateThread ({state, commit, dispatch}, {title, text, id}) {
     return new Promise((resolve, reject) => {
       const thread = state.threads[id]
@@ -97,7 +157,38 @@ export default {
     })
   },
   updateUser ({ commit }, user) {
-    commit('setUser', { userId: user['.key'], user })
+    const updates = {
+      avatar: user.avatar,
+      username: user.username,
+      name: user.name,
+      bio: user.bio,
+      website: user.website,
+      email: user.email,
+      location: user.location
+    }
+    return new Promise((resolve, reject) => {
+      firebase.database().ref('users').child(user['.key']).update(removeEmptyProperties(updates))
+      .then(() => {
+        commit('setUser', { userId: user['.key'], user })
+        resolve(user)
+      })
+    })
+  },
+  fetchAuthUser ({dispatch, commit}) {
+    const userId = firebase.auth().currentUser.uid
+    return new Promise((resolve, reject) => {
+      firebase.database().ref('users').child(userId).once('value', snapshot => {
+        if (snapshot.exists()) {
+          return dispatch('fetchUser', {id: userId})
+          .then(user => {
+            commit('sethAuthId', userId)
+            resolve(user)
+          })
+        } else {
+          resolve(null)
+        }
+      })
+    })
   },
   fetchCategory: ({dispatch}, {id}) => dispatch('fetchItem', {resource: 'categories', id, emoji: 'categories'}),
   fetchForum: ({dispatch}, {id}) => dispatch('fetchItem', {resource: 'forums', id, emoji: 'forums'}),
@@ -126,7 +217,7 @@ export default {
     return new Promise((resolve, reject) => {
       firebase.database().ref(resource).child(id).once('value', snapshot => {
         commit('setItem', {resource, id: snapshot.key, item: snapshot.val()})
-        setTimeout(() => resolve(state[resource][id]), 1000)
+        resolve(state[resource][id])
       })
     })
   },

@@ -4,15 +4,11 @@
     <UserProfileCard
       v-if="!edit"
       :user="user"
-      :userPostsCount="userPostsCount"
-      :userThreadsCount="userThreadsCount"
     />
 
     <UserProfileCardEditor
       v-else
       :user="user"
-      :userPostsCount="userPostsCount"
-      :userThreadsCount="userThreadsCount"
     />
 
     <div class="col-7 push-top">
@@ -32,8 +28,8 @@
 import PostList from '&/PostList'
 import UserProfileCard from '&/UserProfileCard'
 import UserProfileCardEditor from '&/UserProfileCardEditor'
+import asyncDataStatus from '../mixins/asyncDataStatus'
 import {mapGetters} from 'vuex'
-import {countObjectProperties} from '@/utils'
 
 export default {
   components: {
@@ -41,6 +37,7 @@ export default {
     UserProfileCard,
     UserProfileCardEditor
   },
+  mixins: [asyncDataStatus],
   props: {
     edit: {
       type: Boolean,
@@ -51,14 +48,6 @@ export default {
     ...mapGetters({
       user: 'authUser'
     }),
-    userThreadsCount () {
-      return countObjectProperties(this.user.threads)
-    },
-
-    userPostsCount () {
-      return countObjectProperties(this.user.posts)
-    },
-
     userPosts () {
       if (this.user.posts) {
         return Object.values(this.$store.state.posts)

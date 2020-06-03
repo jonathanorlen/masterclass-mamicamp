@@ -4,7 +4,8 @@
       <textarea name id cols="30" rows="10" class="form-input" v-model="text"></textarea>
     </div>
     <div class="form-actions">
-      <button class="btn-blue">Submit Post</button>
+      <button v-if="isUpdate" @click.prevent="cancel" class="btn btn-ghost">Cancel</button>
+      <button class="btn-blue">{{isUpdate ? 'Update' : 'Submit Post'}}</button>
     </div>
   </form>
 </template>
@@ -16,7 +17,18 @@ export default {
       required: false
     },
     post: {
-      type: Object
+      type: Object,
+      validator: obj => {
+        const keyIsValid = typeof obj['.key'] === 'string'
+        const textIsValid = typeof obj.text === 'string'
+        const valid = keyIsValid && textIsValid
+
+        if (!textIsValid) {
+          console.log('The post prop object must include a text attribute')
+        }
+
+        return valid
+      }
     }
   },
 
@@ -32,10 +44,13 @@ export default {
   },
   methods: {
     save () {
-      (this.isUpdate ? this.update() : this.create())
+      this.persist()
       .then(post => {
         this.$emit('save', {post})
       })
+    },
+    cancel () {
+      this.$emit('cancel')
     },
     create () {
       const post = {
@@ -53,6 +68,9 @@ export default {
         text: this.text
       }
       return this.$store.dispatch('updatePost', payload)
+    },
+    persist () {
+      return this.isUpdate ? this.update() : this.create()
     }
   }
 }

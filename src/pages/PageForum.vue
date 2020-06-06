@@ -12,41 +12,6 @@
       </div>
     </div>
 
-    <div class="col-full">
-      <div class="category-item">
-        <div class="forum-list">
-          <h2 class="list-title">Recipes</h2>
-
-          <div class="forum-listing">
-            <div class="forum-details">
-              <a href="#" class="forum-name">Recipes</a>
-
-              <p class="forum-description">Recipes, Guides and Tips &amp; Tricks</p>
-            </div>
-
-            <div class="threads-count">
-              <p class="count text-lead">1</p>threads
-            </div>
-
-            <div class="last-thread">
-              <img
-                class="avatar"
-                src="http://cleaneatsfastfeets.com/wp-content/uploads/2013/05/Mr-Burns.gif"
-                alt
-              />
-              <div class="last-thread-details">
-                <a href="#">How I grill my fish</a>
-                <p class="text-xsmall">
-                  By
-                  <a href="profile.html">Charles Montgomery Burns</a>, 2 days ago
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="col-full push-top">
       <ThreadList :threads="thread" />
     </div>
@@ -71,16 +36,18 @@ export default {
 
   computed: {
     forum () {
-      return this.$store.state.forums[this.id]
+      return this.$store.state.forums.items[this.id]
     },
     thread () {
-      return Object.values(this.$store.state.threads).filter(
+      return Object.values(this.$store.state.threads.items).filter(
         thread => thread.forumId === this.id
       )
     }
   },
   methods: {
-    ...mapActions(['fetchForum', 'fetchThreads', 'fetchUser'])
+    ...mapActions('forums', ['fetchForum']),
+    ...mapActions('threads', ['fetchThreads']),
+    ...mapActions('users', ['fetchUser'])
   },
   created () {
     this.fetchForum({id: this.id})

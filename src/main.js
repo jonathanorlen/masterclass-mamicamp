@@ -7,7 +7,9 @@ import App from './App'
 import router from './router'
 import AppDate from '&/AppDate'
 import store from '@/store'
+import vuelidate from 'vuelidate'
 
+Vue.use(vuelidate)
 Vue.component('AppDate', AppDate)
 
 Vue.config.productionTip = false
@@ -27,7 +29,7 @@ firebase.initializeApp(firebaseConfig)
 /* eslint-disable no-new */
 firebase.auth().onAuthStateChanged(user => {
   if (user) {
-    store.dispatch('fetchAuthUser')
+    store.dispatch('auth/fetchAuthUser')
   }
 })
 

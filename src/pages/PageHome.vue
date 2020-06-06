@@ -18,15 +18,16 @@ export default {
   mixins: [asyncDataStatus],
   computed: {
     categories () {
-      return Object.values(this.$store.state.categories)
+      return Object.values(this.$store.state.categories.items)
     }
   },
   methods: {
-    ...mapActions(['fetchAllCategories', 'fetchForums'])
+    ...mapActions('categories', ['fetchAllCategories']),
+    ...mapActions('forums', ['fetchForums'])
   },
   created () {
     this.fetchAllCategories()
-    .then(categories => Promise.all(categories.map(category => this.fetchForums({ids: Object.values(category.forums)})))
+    .then(categories => Promise.all(categories.map(category => this.fetchForums({ids: Object.keys(category.forums)})))
       .then(() => {
         this.asyncDataStatus_fetched()
       })
@@ -34,7 +35,3 @@ export default {
   }
 }
 </script>
-
-<style>
-@import "../assets/css/style.css";
-</style>

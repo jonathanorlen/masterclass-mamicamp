@@ -7,11 +7,28 @@
             </p>
 
             <div class="form-group">
-                <input type="text" v-model="activeUser.username" placeholder="Username" class="form-input text-lead text-bold">
+                <input 
+                  type="text" 
+                  v-model.lazy="activeUser.username" 
+                  placeholder="Username"
+                  @blur="$v.activeUser.username.$touch()"
+                  class="form-input text-lead text-bold">
+                <template v-if="$v.activeUser.username.$error">
+                  <span v-if="!$v.activeUser.username.required" class="form-error">This field is required</span>
+                  <span v-if="!$v.activeUser.username.unique" class="form-error">Sorry! This username is taken</span>
+                </template>
             </div>
 
             <div class="form-group">
-                <input type="text" v-model="activeUser.name" placeholder="Full Name" class="form-input text-lead">
+                <input 
+                  type="text" 
+                  v-model="activeUser.name"
+                  @blur="$v.activeUser.name.$touch()"
+                  placeholder="Full Name" 
+                  class="form-input text-lead">
+                <template v-if="$v.activeUser.name.$error">
+                  <span v-if="!$v.activeUser.name.required" class="form-error">The name field is required</span>
+                </template>
             </div>
 
             <div class="form-group">
@@ -33,7 +50,17 @@
 
             <div class="form-group">
                 <label class="form-label" for="user_email">Email</label>
-                <input autocomplete="off" v-model="activeUser.email" class="form-input" id="user_email">
+                <input 
+                  autocomplete="off" 
+                  @blur="$v.activeUser.email.$touch()"
+                  v-model.lazy="activeUser.email" 
+                  class="form-input" 
+                  id="user_email">
+                <template v-if="$v.activeUser.email.$error">
+                  <span v-if="!$v.activeUser.email.required" class="form-error">This field is required</span>
+                  <span v-else-if="!$v.activeUser.email.email" class="form-error">This in not a valid email address</span>
+                  <span v-else-if="!$v.activeUser.email.unique" class="form-error">Sorry! This email is taken</span>
+                </template>
             </div>
 
             <div class="form-group">
@@ -52,6 +79,9 @@
 </template>
 
 <script>
+import { required, email } from 'vuelidate/lib/validators'
+import { uniqueUsername, uniqueEmail } from '@/utils/validators'
+
 export default {
   props: {
     user: {
@@ -64,10 +94,29 @@ export default {
       activeUser: {...this.user}
     }
   },
+  validations: {
+    activeUser: {
+      name: {
+        required
+      },
+      username: {
+        required,
+        unique: uniqueUsername
+      },
+      email: {
+        required,
+        email,
+        unique: uniqueEmail
+      }
+    }
+  },
   methods: {
     save () {
-      this.$store.dispatch('updateUser', {...this.activeUser})
-      this.$router.push({name: 'Profile'})
+      this.$v.activeUser.$touch()
+      if (!this.$v.activeUser.$invalid) {
+        this.$store.dispatch('users/updateUser', {...this.activeUser})
+        this.$router.push({name: 'Profile'})
+      }
     },
     cancel () {
       this.$router.push({name: 'Profile'})
@@ -75,10 +124,10 @@ export default {
   },
   computed: {
     userThreadsCount () {
-      return this.$store.getters.userThreadsCount(this.user['.key'])
+      return this.$store.getters['users/userThreadsCount'](this.user['.key'])
     },
     userPostsCount () {
-      return this.$store.getters.userPostsCount(this.user['.key'])
+      return this.$store.getters['users/userPostsCount'](this.user['.key'])
     }
   }
 }

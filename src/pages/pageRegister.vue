@@ -6,27 +6,95 @@
 
         <div class="form-group">
           <label for="name">Full Name</label>
-          <input id="name" v-model="form.name" type="text" class="form-input">
+          <input 
+            id="name"
+            @blur="$v.form.name.$touch()"
+            v-model="form.name" 
+            type="text" 
+            class="form-input">
+            <template v-if="$v.form.name.$error">
+              <span v-if="!$v.form.name.required" class="form-error">
+                This field is required
+              </span>
+            </template>
         </div>
 
         <div class="form-group">
           <label for="username">Username</label>
-          <input id="username" v-model="form.username" type="text" class="form-input">
+          <input 
+            id="username" 
+            @blur="$v.form.username.$touch()"
+            v-model="form.username" 
+            type="text" 
+            class="form-input">
+            <template v-if="$v.form.username.$error">
+              <span v-if="!$v.form.username.required" class="form-error">
+                This field is required
+              </span>
+              <span v-if="!$v.form.username.unique" class="form-error">
+                Sorry! This username is taken
+              </span>
+            </template>
         </div>
 
         <div class="form-group">
           <label for="email">Email</label>
-          <input id="email" v-model="form.email" type="email" class="form-input">
+          <input 
+            id="email" 
+            @blur="$v.form.email.$touch()"
+            v-model="form.email" 
+            type="email" 
+            class="form-input">
+            <template v-if="$v.form.email.$error">
+              <span v-if="!$v.form.email.required" class="form-error">
+                This field is required
+              </span>
+              <span v-else-if="!$v.form.email.email" class="form-error">
+                This in not a valid email address
+              </span>
+              <span v-else-if="!$v.form.email.unique" class="form-error">
+                Sorry! This email is taken
+              </span>
+            </template>
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input id="password" v-model="form.password" type="password" class="form-input">
+          <input 
+            id="password" 
+            @blur="$v.form.password.$touch()"
+            v-model="form.password" 
+            type="password" 
+            class="form-input">
+            <template v-if="$v.form.password.$error">
+              <span v-if="!$v.form.password.required" class="form-error">
+                This field is required
+              </span>
+              <span v-if="!$v.form.password.minLength" class="form-error">
+                The Password must be at least 6 characters long
+              </span>
+            </template>
         </div>
 
         <div class="form-group">
           <label for="avatar">Avatar</label>
-          <input id="avatar" v-model="form.avatar" type="text" class="form-input">
+          <input 
+            id="avatar" 
+            @blur="$v.form.avatar.$touch()"
+            v-model.lazy="form.avatar" 
+            type="text" 
+            class="form-input">
+            <template v-if="$v.form.avatar.$error">
+              <span v-if="!$v.form.avatar.url" class="form-error">
+                The supplied URL is invalid
+              </span>
+              <span v-else-if="!$v.form.avatar.supportedImageFile" class="form-error">
+                The file type is not supported by our system
+              </span>
+              <span v-else-if="!$v.form.avatar.responseOk" class="form-error">
+                The supplied image cannot be found
+              </span>
+            </template>
         </div>
 
         <div class="form-actions">
@@ -42,6 +110,8 @@
 </template>
 
 <script>
+  import {required, email, minLength, url} from 'vuelidate/lib/validators'
+  import {uniqueUsername, uniqueEmail, supportedImageFile, responseOk} from '@/utils/validators'
   export default {
     data () {
       return {
@@ -54,13 +124,42 @@
         }
       }
     },
+    validations: {
+      form: {
+        name: {
+          required
+        },
+        username: {
+          required,
+          unique: uniqueUsername
+        },
+        email: {
+          required,
+          email,
+          unique: uniqueEmail
+        },
+        password: {
+          required,
+          minLength: minLength(6)
+        },
+        avatar: {
+          url,
+          supportedImageFile,
+          responseOk
+        }
+      }
+    },
     methods: {
       register () {
-        this.$store.dispatch('registerUserWithEmailAndPassword', this.form)
+        this.$v.form.$touch()
+        if (this.$v.form.$invalid) {
+          return
+        }
+        this.$store.dispatch('auth/registerUserWithEmailAndPassword', this.form)
         .then(() => this.$router.push('/'))
       },
       registerWithGoogle () {
-        this.$store.dispatch('signInWithGoogle')
+        this.$store.dispatch('auth/signInWithGoogle')
         // .then(() => this.$router.push('/'))
       }
     },

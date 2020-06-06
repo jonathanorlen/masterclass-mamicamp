@@ -1,8 +1,16 @@
 <template>
   <form @submit.prevent="save">
     <div class="form-group">
-      <textarea name id cols="30" rows="10" class="form-input" v-model="text"></textarea>
+      <textarea
+        cols="30" 
+        rows="10" 
+        class="form-input" 
+        @blur="$v.form.text.$touch()"
+        v-model="text"></textarea>
     </div>
+    <template v-if="$v.form.text.$error">
+      <span v-if="!$v.form.text.minLength" class="form-error">The text must be least 40 characters long</span>
+    </template>
     <div class="form-actions">
       <button v-if="isUpdate" @click.prevent="cancel" class="btn btn-ghost">Cancel</button>
       <button class="btn-blue">{{isUpdate ? 'Update' : 'Submit Post'}}</button>
@@ -11,6 +19,8 @@
 </template>
 
 <script>
+import {required, minLength} from 'vuelidate/lib/validators'
+import {mapActions} from 'vuex'
 export default {
   props: {
     threadId: {
@@ -31,10 +41,16 @@ export default {
       }
     }
   },
-
   data () {
     return {
       text: this.post ? this.post.text : ''
+    }
+  },
+  validations: {
+    form: {
+      text: {
+        minLength: minLength(40)
+      }
     }
   },
   computed: {
@@ -43,11 +59,15 @@ export default {
     }
   },
   methods: {
+    ...mapActions('posts', ['createPost', 'updatePost']),
     save () {
-      this.persist()
-      .then(post => {
-        this.$emit('save', {post})
-      })
+      this.$v.form.$touch()
+      if (!this.$v.form.$invalid) {
+        this.persist()
+        .then(post => {
+          this.$emit('save', {post})
+        })
+      }
     },
     cancel () {
       this.$emit('cancel')
@@ -60,14 +80,14 @@ export default {
 
       this.text = ''
       // this.$emit('save', { post })
-      return this.$store.dispatch('createPost', post)
+      return this.createPost(post)
     },
     update () {
       const payload = {
         id: this.post['.key'],
         text: this.text
       }
-      return this.$store.dispatch('updatePost', payload)
+      return this.updatePost(payload)
     },
     persist () {
       return this.isUpdate ? this.update() : this.create()
